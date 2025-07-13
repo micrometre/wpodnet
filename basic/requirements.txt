@@ -1,0 +1,10 @@
+Keras
+Tensorflow
+Numpy
+Matplotlib
+opencv-python
+opencv-python-headless 
+scikit-learn
+pytesseract
+imutils
+scikit-image

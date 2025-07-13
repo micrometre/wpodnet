@@ -1,0 +1,9 @@
+numpy
+Pillow
+torch
+torchvision
+opencv-python 
+tqdm
+easyocr
+matplotlib
+requests
