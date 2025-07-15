@@ -1,45 +1,37 @@
 import cv2
-import numpy as np
-import tensorflow as tf
-from local_utils import (get_plate, lphm_rotation, transform_plate, 
-                   decode_plate, draw_plate, load_wpod_net)
+from local_utils import load_model, detect_lp, im2single
+
+# Path to the input image
+img_path = "test/2.jpg"
 
 # Load the pretrained WPOD-NET model
 model_path = 'wpod-net.json'    # Model architecture file
 weights_path = 'wpod-net.h5'    # Model weights file
-wpod_net = load_wpod_net(model_path, weights_path)
+wpod_net = load_model(model_path, weights_path)
 
-# Load an image
-image_path = 'test/1.jpg'
-image = cv2.imread(image_path)
-
-# Preprocess the image for WPOD-NET
-img_resized = cv2.resize(image, (512, 512))
-img_resized = img_resized.astype('float32')
-img_resized /= 255.0
-img_resized = np.expand_dims(img_resized, axis=0)
-
-# Run detection
-predictions = wpod_net.predict(img_resized)
-
-# Process predictions to get plate coordinates
-plates = get_plate(predictions, img_resized.shape)
-
-# Draw detected plates on the original image
-for plate in plates:
-    # Get plate corners
-    corners = plate['corners']
-    
-    # Draw the plate polygon
-    image = draw_plate(image, corners)
-    
-    # Optional: Extract and rotate the plate
-    plate_img = transform_plate(image, corners)
-    
-    # If you have OCR, you could process plate_img here
-
-# Save or display the result
-cv2.imwrite('detected_plate.jpg', image)
-cv2.imshow('License Plate Detection', image)
+# Read the input vehicle image
+Ivehicle = cv2.imread(img_path)
+cv2.imshow("Original image", Ivehicle)  # Display the original image
 cv2.waitKey(0)
+
+# Set maximum and minimum dimensions for license plate detection
+Dmax = 608
+Dmin = 288
+
+# Calculate resize ratio and bounding dimension
+ratio = float(max(Ivehicle.shape[:2])) / min(Ivehicle.shape[:2])
+side = int(ratio * Dmin)
+bound_dim = min(side, Dmax)
+
+# Detect license plate(s) in the image
+_, LpImg, lp_type = detect_lp(
+    wpod_net, im2single(Ivehicle), bound_dim, lp_threshold=0.5
+)
+
+# If any license plate images are detected, display the first one
+if len(LpImg):
+    cv2.imshow("Detected Licence plate", cv2.cvtColor(LpImg[0], cv2.COLOR_RGB2BGR))
+    cv2.waitKey()
+
+# Close all OpenCV windows
 cv2.destroyAllWindows()
