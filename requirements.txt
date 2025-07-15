@@ -8,3 +8,4 @@ scikit-learn
 pytesseract
 imutils
 scikit-image
+easyocr
