@@ -1,9 +1,28 @@
+import os
+import sys
 import cv2
 from local_utils import load_model, detect_lp, im2single
 import numpy as np
+import uuid
+
+if not os.path.exists("images"):
+    os.makedirs("images")
+if not os.path.exists("images/warped"):
+    os.makedirs("images/warped")        
+if not os.path.exists("images/original"):
+    os.makedirs("images/original")
 
 # Path to the input image
-img_path = "test/2.jpg"
+if len(sys.argv) > 1:
+    img_path = sys.argv[1]
+else:
+    img_path = "test/2.jpg"  # Default image if no argument is provided
+
+
+# Generate unique ID for this detection
+detection_id = str(uuid.uuid4())
+
+
 
 # Load the pretrained WPOD-NET model
 model_path = 'wpod-net.json'    # Model architecture file
@@ -13,8 +32,8 @@ wpod_net = load_model(model_path, weights_path)
 # Read the input vehicle image
 Ivehicle = cv2.imread(img_path)
 cv2.imshow("Original image", Ivehicle)  # Display the original image
-cv2.imwrite("original_image.jpg", Ivehicle)  # Save the original image
-cv2.waitKey(0)
+cv2.imwrite(f"images/original/{detection_id}.jpg", Ivehicle)  # Save the detected license plate
+
 
 # Set maximum and minimum dimensions for license plate detection
 Dmax = 608
@@ -36,9 +55,10 @@ if len(LpImg):
     print("Min pixel value:", LpImg[0].min(), "Max pixel value:", LpImg[0].max())
     lp_img_uint8 = (LpImg[0] * 255).astype(np.uint8)
     lp_bgr = cv2.cvtColor(lp_img_uint8, cv2.COLOR_RGB2BGR)
-    cv2.imshow("detected Licence plate", lp_bgr)
-    cv2.imwrite("detected_license_plate.jpg", lp_bgr)  # Save the detected license plate
-    cv2.waitKey()
+    cv2.imshow(f"detected Licence plate - {detection_id}", lp_bgr)
+    cv2.imwrite(f"images/warped/{detection_id}.jpg", lp_bgr)  # Save the detected license plate
+    cv2.waitKey(0)
 
 # Close all OpenCV windows
-cv2.destroyAllWindows()
+if cv2.getWindowProperty(f"detected Licence plate - {detection_id}", cv2.WND_PROP_VISIBLE) >= 1:
+    cv2.destroyAllWindows()
