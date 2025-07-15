@@ -13,6 +13,8 @@ if not os.path.exists("images/warped"):
 if not os.path.exists("images/original"):
     os.makedirs("images/original")
 
+os.makedirs('outputs', exist_ok=True)
+
 # Path to the input file (image or video)
 if len(sys.argv) > 1:
     input_path = sys.argv[1]
@@ -42,6 +44,8 @@ Dmin = 288
 
 detection_id = str(uuid.uuid4())
 
+reader = easyocr.Reader(['en'], gpu=False)
+
 def process_frame(Ivehicle, detection_id_prefix=""):
     if Ivehicle is None or Ivehicle.size == 0 or min(Ivehicle.shape[:2]) < 30:
         return False
@@ -67,11 +71,35 @@ def process_frame(Ivehicle, detection_id_prefix=""):
     if len(LpImg):
         lp_img_uint8 = (LpImg[0] * 255).astype(np.uint8)
         lp_bgr = cv2.cvtColor(lp_img_uint8, cv2.COLOR_RGB2BGR)
+        gray = cv2.cvtColor(lp_bgr, cv2.COLOR_RGB2GRAY)
+        # Contrast enhancement with CLAHE
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+        enhanced = clahe.apply(gray) 
+        
+        
+        # 2. Otsu's thresholding
+        _, binary_otsu = cv2.threshold(enhanced, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        
+        # Choose the best one based on your typical plates
+        binary = binary_otsu  # or binary_otsu
+        
+        # Morphological operations to clean up the image
+        kernel = np.ones((2, 2), np.uint8)
+        binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel)
+        
+        # Denoising
+        denoised = cv2.fastNlMeansDenoising(binary, h=10)
+
         if detection_id_prefix:
             warped_path = f"images/warped/{detection_id_prefix}.jpg"
+        cv2.imwrite(warped_path, denoised)
+        # OCR with easyocr
+        result = reader.readtext(denoised)
+        if result:
+            plate_texts = [r[1] for r in result]
+            print(f"[OCR] License plate(s) detected: {plate_texts}")
         else:
-            warped_path = f"images/warped/{str(uuid.uuid4())}.jpg"
-        cv2.imwrite(warped_path, lp_bgr)
+            print("[OCR] No text detected on license plate.")
         return True
     return False
 
