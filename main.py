@@ -1,6 +1,7 @@
 import os
 import sys
 import cv2
+import requests
 from local_utils import load_model, detect_lp, im2single
 import numpy as np
 import uuid
@@ -43,6 +44,7 @@ Dmin = 288
 
 
 detection_id = str(uuid.uuid4())
+server_url = "http://localhost:8080/alprd"
 
 reader = easyocr.Reader(['en'], gpu=False)
 
@@ -96,22 +98,30 @@ def process_frame(Ivehicle, detection_id_prefix=""):
         # OCR with easyocr
         result = reader.readtext(denoised)
         if result:
-            plate_texts = [r[1] for r in result]
-
-
+            plate_texts = [r[1].upper().replace("I", "1") for r in result]
             plate_info = {
             "uuid": detection_id,
             "results": [
                 {
-                    "plate": plate_texts,
+                    "plate": plate_texts[0] if plate_texts else "",
                     "image_path": str(orig_path),
                     "original_frame_path": orig_path
                 }
             ]
             }
-            print(plate_info)
 
-
+            print(f"[DEBUG] Sending payload: {plate_info}")
+            # Send HTTP POST request
+            headers = {"Content-Type": "application/json"}
+            try:
+                response = requests.post(server_url, json=plate_info, headers=headers)
+                if response.status_code == 200:
+                    print(f"  Data successfully sent to server: {response.json()}")
+                else:
+                    print(f"  Failed to send data. Status code: {response.status_code}")
+                    print(f"  Response text: {response.text}")
+            except Exception as e:
+                print(f"  Error occurred while sending data: {e}")            
 
             print(f"[OCR] License plate(s) detected: {plate_texts}")
         else:
