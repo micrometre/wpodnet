@@ -97,6 +97,22 @@ def process_frame(Ivehicle, detection_id_prefix=""):
         result = reader.readtext(denoised)
         if result:
             plate_texts = [r[1] for r in result]
+
+
+            plate_info = {
+            "uuid": detection_id,
+            "results": [
+                {
+                    "plate": plate_texts,
+                    "image_path": str(orig_path),
+                    "original_frame_path": orig_path
+                }
+            ]
+            }
+            print(plate_info)
+
+
+
             print(f"[OCR] License plate(s) detected: {plate_texts}")
         else:
             print("[OCR] No text detected on license plate.")
