@@ -33,8 +33,8 @@ if len(sys.argv) > 2:
         nth = 1
 
 # Load the pretrained WPOD-NET model
-model_path = 'wpod-net.json'    # Model architecture file
-weights_path = 'wpod-net.h5'    # Model weights file
+model_path = 'models/wpod-net.json'    # Model architecture file
+weights_path = 'weights/wpod-net.h5'    # Model weights file
 wpod_net = load_model(model_path, weights_path)
 
 # Set maximum and minimum dimensions for license plate detection
